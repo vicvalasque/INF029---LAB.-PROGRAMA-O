@@ -11,7 +11,10 @@
 #define EXCLU_ALU_SUCESSO -6
 #define DATA_INVALIDA -7
 #define DATA_VALIDA -8
-
+#define CPF_VALIDO -9
+#define CPF_INVALIDO -10
+#define SEXO_INVALIDO -11
+#define LISTA_INVALIDA -12
 typedef struct alu
 {
     int matricula;
@@ -24,13 +27,15 @@ typedef struct alu
     int ativo;
 } Aluno;
 
-// Protótipos das funções
+// Prototipos das funcoes
 int menuGeral();
 int menuAluno();
 int cadastrarAluno(Aluno listaAluno[], int qtdAluno);
 void listarAluno(Aluno listaAluno[], int qtdAluno);
 int atualizarAluno(Aluno listaAluno[], int qtdAluno);
 int excluirAluno(Aluno listaAluno[], int qtdAluno);
+int validarCPFAluno(char cpf[]);
+int menuListarAluno();
 
 int main()
 {
@@ -60,6 +65,8 @@ int main()
             int sairAluno = 0;
             int opcaoAluno;
             int qtdAluno = 0;
+            int opcaoListaAluno;
+
             while (!sairAluno)
             {
                 printf("Modulo Aluno\n");
@@ -85,6 +92,18 @@ int main()
                     {
                         printf("Matricula invalida\n");
                     }
+                    else if (retorno == DATA_INVALIDA)
+                    {
+                        printf("Data de nascimento invalida\n");
+                    }
+                    else if (retorno == SEXO_INVALIDO)
+                    {
+                        printf("Sexo informado invalido.\n");
+                    }
+                    else if (retorno == CPF_INVALIDO)
+                    {
+                        printf("CPF informado invalido.\n");
+                    }
                     else if (retorno == CAD_ALUNO_SUCESSO)
                     {
                         qtdAluno++;
@@ -95,6 +114,7 @@ int main()
                 }
                 case 2:
                 {
+                    opcaoListaAluno = menuListarAluno;
                     listarAluno(listaAluno, qtdAluno);
                     break;
                 }
@@ -258,6 +278,73 @@ int validarDataAluno(Aluno listaAluno[], int qtdAluno, int dia, int mes, int ano
     return DATA_INVALIDA;
 }
 
+int validarCPF(char cpf[])
+{
+    char cpfLimpo[12];
+    int j = 0;
+
+    for (int i = 0; cpf[i] != '\0'; i++)
+    {
+        if (cpf[i] >= '0' && cpf[i] <= '9')
+        {
+            cpfLimpo[j] = cpf[i];
+            j++;
+        }
+    }
+    cpfLimpo[j] = '\0';
+
+    if (j != 11)
+    {
+        return CPF_INVALIDO;
+    }
+
+    int todosIguais = 1;
+    for (int i = 1; i < 11; i++)
+    {
+        if (cpfLimpo[i] != cpfLimpo[0])
+        {
+            todosIguais = 0;
+            break;
+        }
+    }
+    if (todosIguais)
+    {
+        return CPF_INVALIDO;
+    }
+
+    int soma = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        soma += (cpfLimpo[i] - '0') * (10 - i);
+    }
+    int resto = (soma * 10) % 11;
+    if (resto == 10 || resto == 11)
+    {
+        resto = 0;
+    }
+    if (resto != (cpfLimpo[9] - '0'))
+    {
+        return CPF_INVALIDO;
+    }
+
+    soma = 0;
+    for (int i = 0; i < 10; i++)
+    {
+        soma += (cpfLimpo[i] - '0') * (11 - i);
+    }
+    resto = (soma * 10) % 11;
+    if (resto == 10 || resto == 11)
+    {
+        resto = 0;
+    }
+    if (resto != (cpfLimpo[10] - '0'))
+    {
+        return CPF_INVALIDO;
+    }
+
+    return CPF_VALIDO;
+}
+
 int cadastrarAluno(Aluno listaAluno[], int qtdAluno)
 {
     printf("Cadastrar aluno\n");
@@ -290,8 +377,8 @@ int cadastrarAluno(Aluno listaAluno[], int qtdAluno)
         printf("Insira a data de nascimento (XX/XX/XXXX): \n");
         scanf("%d/%d/%d", &dia, &mes, &ano);
 
-        int resultado = validarDataAluno(listaAluno, qtdAluno, dia, mes, ano);
-        if (resultado == DATA_VALIDA)
+        int resultadoData = validarDataAluno(listaAluno, qtdAluno, dia, mes, ano);
+        if (resultadoData == DATA_VALIDA)
         {
             listaAluno[qtdAluno].dia = dia;
             listaAluno[qtdAluno].mes = mes;
@@ -301,18 +388,53 @@ int cadastrarAluno(Aluno listaAluno[], int qtdAluno)
         {
             return DATA_INVALIDA;
         }
-        /*printf("Digite o sexo: \n");
+
+        printf("Digite o sexo (M/F): \n");
+        getchar();
         scanf("%c", &sexo);
 
-        printf("Insira o CPF: \n");
-        fgets(cpf, 15, stdin);*/
+        if (sexo == 'm' || sexo == 'M' || sexo == 'f' || sexo == 'F')
+        {
+            listaAluno[qtdAluno].sexo = sexo;
+        }
+        else
+        {
+            return SEXO_INVALIDO;
+        }
 
-        // Else será readicionado após colocar validação do CPF.
+        printf("Insira o CPF: \n");
+        getchar();
+        fgets(cpf, 15, stdin);
+
+        int resultadoCPF = validarCPFAluno(cpf);
+        if (resultadoCPF == CPF_VALIDO)
+        {
+            strcpy(listaAluno[qtdAluno].cpf, cpf);
+        }
+        else
+        {
+            return CPF_INVALIDO;
+        }
 
         listaAluno[qtdAluno].matricula = matricula;
         listaAluno[qtdAluno].ativo = 1;
         return CAD_ALUNO_SUCESSO;
     }
+}
+
+int menuListarAluno()
+{
+
+    int opcao;
+    printf("Insira a opcao desejada\n");
+    printf("0 - Voltar\n");
+    printf("1 - Listar alunos\n");
+    printf("2 - Listar por sexo\n");
+    printf("3 - Listar ordenado por nome\n");
+    printf("4 - Listar aluno ordenado por data de nascimento\n");
+    scanf("%d", &opcao);
+
+    return opcao;
 }
 
 void listarAluno(Aluno listaAluno[], int qtdAluno)
@@ -327,10 +449,57 @@ void listarAluno(Aluno listaAluno[], int qtdAluno)
         for (int i = 0; i < qtdAluno; i++)
         {
             if (listaAluno[i].ativo == 1)
+            {
                 printf("Matricula: %d\n", listaAluno[i].matricula);
+                printf("Nome completo: %s\n", listaAluno[i].nome);
+                printf("Data de nascimento: %d/%d/%d\n", listaAluno[i].dia, listaAluno[i].mes, listaAluno[i].ano);
+                printf("Sexo: %c\n", listaAluno[i].sexo);
+                printf("CPF: %s\n", listaAluno[i].cpf);
+            }
         }
     }
 }
+
+int listarAluSexo(Aluno listaAluno[], int qtdAluno)
+{
+    printf("Listar aluno por sexo (M/F)\n\n");
+    if (qtdAluno == 0)
+    {
+        printf("Lista vazia.\n");
+    }
+    else
+    {
+        char sexo;
+
+        printf("Informe o sexo do aluno: \n");
+        scanf("%c", &sexo);
+
+        if (sexo == 'M' || sexo == 'm' || sexo == 'F' || sexo == 'f')
+        {
+            for (int i = 0; i < qtdAluno; i++)
+            {
+                if (listaAluno[i].sexo == sexo)
+                {
+                    if (listaAluno[i].ativo == 1)
+                    {
+                        printf("Matricula: %d\n", listaAluno[i].matricula);
+                        printf("Nome completo: %s\n", listaAluno[i].nome);
+                        printf("Data de nascimento: %d/%d/%d\n", listaAluno[i].dia, listaAluno[i].mes, listaAluno[i].ano);
+                        printf("Sexo: %c\n", listaAluno[i].sexo);
+                        printf("CPF: %s\n", listaAluno[i].cpf);
+                    }
+                }
+                
+            }
+        }
+        else
+        {
+            return LISTA_INVALIDA;
+        }
+    }
+}
+
+// Ajustar esse listar alu sexo, organizar laço de repetição e ocndicional
 
 int atualizarAluno(Aluno listaAluno[], int qtdAluno)
 {
